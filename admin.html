@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control | GCM AUTOMOTORS</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Manrope', sans-serif; background-color: #f4f4f5; }
+        h1, h2, h3, .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        
+        /* Modal Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 10px; }
+    </style>
+
+    <!-- Firebase Compat SDK (Permite abrir dando doble clic sin servidor local) -->
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-storage-compat.js"></script>
+</head>
+<body class="text-zinc-800 hidden" id="app-body"> <!-- Oculto hasta verificar auth -->
+
+    <!-- Top Navigation -->
+    <nav class="bg-white border-b border-zinc-200 fixed w-full z-30 top-0">
+        <div class="px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <span class="text-orange-600 font-black text-2xl">//</span>
+                <span class="text-zinc-900 font-black text-xl tracking-tighter">GCM ADMIN</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span id="user-email" class="text-xs font-bold text-zinc-500 uppercase tracking-widest hidden sm:block"></span>
+                <button id="logout-btn" class="flex items-center gap-2 text-zinc-500 hover:text-red-600 transition-colors text-sm font-bold">
+                    <span class="material-symbols-outlined text-lg">logout</span> Salir
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-24 px-6 max-w-7xl mx-auto pb-12">
+        <!-- Header & Stats -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold font-headline tracking-tight">Inventario de Vehículos</h1>
+                <p class="text-zinc-500 text-sm mt-1">Administra los carros que se muestran en tu página web pública.</p>
+            </div>
+            <button onclick="openModal()" class="bg-zinc-900 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-orange-600 transition-colors flex items-center gap-2 shadow-lg active:scale-95">
+                <span class="material-symbols-outlined">add</span>
+                Añadir Nuevo Vehículo
+            </button>
+        </div>
+
+        <!-- Inventory Table -->
+        <div class="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-zinc-50 border-b border-zinc-200 text-xs uppercase tracking-widest text-zinc-500 font-bold">
+                            <th class="p-4 pl-6">Vehículo</th>
+                            <th class="p-4">Precio</th>
+                            <th class="p-4">Detalles</th>
+                            <th class="p-4 text-center">Estado</th>
+                            <th class="p-4 pr-6 text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-list" class="divide-y divide-zinc-100">
+                        <!-- Vehículos se cargarán aquí por JS -->
+                        <tr><td colspan="5" class="p-8 text-center text-zinc-400">Cargando inventario...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Vehicle Modal (Hidden by default) -->
+    <div id="vehicle-modal" class="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm z-50 hidden flex justify-end">
+        
+        <!-- Modal Content (Slide in from right) -->
+        <div class="bg-white w-full max-w-2xl h-full flex flex-col shadow-2xl animate-[slideIn_0.3s_ease-out]">
+            
+            <!-- Modal Header -->
+            <div class="p-6 border-b border-zinc-200 flex justify-between items-center bg-zinc-50">
+                <h2 id="modal-title" class="text-xl font-bold font-headline">Añadir Vehículo</h2>
+                <button onclick="closeModal()" class="text-zinc-400 hover:text-zinc-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <!-- Modal Body (Form) -->
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+                <form id="vehicle-form" class="space-y-8">
+                    <input type="hidden" id="vehicle-id">
+
+                    <!-- Section A: Photos -->
+                    <section class="space-y-4">
+                        <h3 class="text-xs font-bold uppercase tracking-widest text-orange-600 border-b border-zinc-100 pb-2">1. Fotografías</h3>
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-zinc-700 mb-2">Foto Principal del Vehículo</label>
+                                <!-- File Input Container -->
+                                <div class="flex flex-col gap-4">
+                                    <!-- File Input -->
+                                    <div class="w-full relative">
+                                        <input type="file" id="image-file" accept="image/*" multiple class="block w-full text-sm text-zinc-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100 transition-colors cursor-pointer border border-zinc-200 rounded-xl bg-white focus:outline-none">
+                                        <div id="image-loading" class="absolute inset-0 bg-white/80 backdrop-blur-sm hidden items-center justify-center rounded-xl border border-zinc-200 z-10">
+                                            <span class="material-symbols-outlined animate-spin text-orange-600 mr-2">sync</span>
+                                            <span id="loading-text" class="text-sm font-bold text-orange-600">Subiendo fotos...</span>
+                                        </div>
+                                    </div>
+                                    <p class="text-[10px] text-zinc-400 mt-[-8px]">Puedes seleccionar varias fotos al mismo tiempo (hasta 20 recomendadas). El orden de selección será el orden en la galería.</p>
+                                    
+                                    <!-- Multiple Image Preview Grid -->
+                                    <div id="preview-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mt-2">
+                                        <!-- JS will inject thumbnails here -->
+                                        <div class="w-full aspect-video rounded-xl bg-zinc-100 border-2 border-dashed border-zinc-300 flex items-center justify-center text-zinc-400 text-xs font-bold col-span-full">Sin Fotos Seleccionadas</div>
+                                    </div>
+                                    
+                                    <!-- Hidden input to store existing image URLs when editing (JSON stringified) -->
+                                    <input type="hidden" id="current-images-json">
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Section B: Prices -->
+                    <section class="space-y-4">
+                        <div class="flex items-center justify-between border-b border-zinc-100 pb-2">
+                            <h3 class="text-xs font-bold uppercase tracking-widest text-orange-600">2. Precios y Ofertas</h3>
+                            <span class="text-[10px] bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">Etiqueta Automática</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-zinc-700 mb-1">Precio Actual *</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-3 text-zinc-400 font-bold">$</span>
+                                    <input type="number" id="price" required min="0" class="w-full pl-8 pr-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-zinc-700 mb-1">Precio Anterior <span class="text-zinc-400 font-normal">(Opcional)</span></label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-3 text-zinc-400 font-bold">$</span>
+                                    <input type="number" id="old-price" min="0" placeholder="Ej. para oferta" class="w-full pl-8 pr-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none bg-zinc-50">
+                                </div>
+                                <p class="text-[10px] text-zinc-400 mt-1 leading-tight">Si lo llenas, se tachará y pondrá la etiqueta de "Oferta Especial".</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Section C: Details -->
+                    <section class="space-y-4">
+                        <h3 class="text-xs font-bold uppercase tracking-widest text-orange-600 border-b border-zinc-100 pb-2">3. Detalles Generales</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-zinc-700 mb-1">Marca *</label>
+                                <select id="brand" required class="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none bg-white">
+                                    <option value="">Selecciona...</option>
+                                    <option value="RAM">RAM</option>
+                                    <option value="Ford">Ford</option>
+                                    <option value="Chevrolet">Chevrolet</option>
+                                    <option value="Nissan">Nissan</option>
+                                    <option value="Toyota">Toyota</option>
+                                    <option value="Honda">Honda</option>
+                                    <option value="Volkswagen">Volkswagen</option>
+                                    <option value="Jeep">Jeep</option>
+                                    <option value="Suzuki">Suzuki</option>
+                                    <option value="MG">MG</option>
+                                    <option value="Chirey">Chirey</option>
+                                    <option value="Mercedes-Benz">Mercedes-Benz</option>
+                                    <option value="Otra">Otra...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-zinc-700 mb-1">Modelo *</label>
+                                <input type="text" id="model" required placeholder="Ej. Lobo Platinum" class="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-zinc-700 mb-1">Año *</label>
+                                <select id="year" required class="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none bg-white">
+                                    <!-- Años generados por JS -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-zinc-700 mb-1">Tipo *</label>
+                                <select id="type" required class="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none bg-white">
+                                    <option value="SUV">SUV</option>
+                                    <option value="Sedán">Sedán</option>
+                                    <option value="Pickup">Pickup</option>
+                                    <option value="Hatchback">Hatchback</option>
+                                    <option value="Deportivo">Deportivo</option>
+                                    <option value="MPV">MPV / Minivan</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-zinc-700 mb-1">Transmisión *</label>
+                                <select id="transmission" required class="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none bg-white">
+                                    <option value="Automática">Automática</option>
+                                    <option value="Manual">Manual</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-zinc-700 mb-1">Combustible *</label>
+                                <select id="fuel" required class="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none bg-white">
+                                    <option value="Gasolina">Gasolina</option>
+                                    <option value="Híbrido">Híbrido</option>
+                                    <option value="Eléctrico">Eléctrico</option>
+                                    <option value="Diésel">Diésel</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-zinc-700 mb-1">Kilometraje *</label>
+                                <input type="text" id="km" required placeholder="Ej. 45,000" class="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none">
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Section D: Technical -->
+                    <section class="space-y-4">
+                        <h3 class="text-xs font-bold uppercase tracking-widest text-orange-600 border-b border-zinc-100 pb-2">4. Especificaciones Básicas</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-zinc-700 mb-1">Motor</label>
+                                <input type="text" id="engine" placeholder="Ej. 3.5L V6" class="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-zinc-700 mb-1">Caballos (HP)</label>
+                                <input type="text" id="hp" placeholder="Ej. 400 hp" class="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-zinc-700 mb-1">Pasajeros</label>
+                                <input type="text" id="capacity" placeholder="Ej. 5 Pasajeros" class="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-zinc-700 mb-1">Descripción Atractiva</label>
+                            <textarea id="description" rows="4" placeholder="Escribe aquí los detalles que enamorarán a tu cliente..." class="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none resize-none"></textarea>
+                        </div>
+                    </section>
+                    
+                    <!-- Section E: Status / Visibility -->
+                    <section class="bg-zinc-50 p-4 rounded-xl border border-zinc-200 flex flex-col gap-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-sm font-bold text-zinc-900">Visibilidad en la Web</h3>
+                                <p class="text-xs text-zinc-500">Apágalo si el auto fue apartado o vendido para ocultarlo sin borrarlo.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="is-active" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-zinc-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                                <span class="ml-3 text-sm font-bold text-zinc-700" id="status-label">Público</span>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between pt-4 border-t border-zinc-200">
+                            <div>
+                                <h3 class="text-sm font-bold text-zinc-900">Oferta Especial</h3>
+                                <p class="text-xs text-zinc-500">Mostrar también en la sección de Ofertas Especiales.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="is-offer" class="sr-only peer">
+                                <div class="w-11 h-6 bg-zinc-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
+                                <span class="ml-3 text-sm font-bold text-zinc-700" id="offer-label">No</span>
+                            </label>
+                        </div>
+                    </section>
+
+                </form>
+            </div>
+
+            <!-- Modal Footer (Actions) -->
+            <div class="p-6 border-t border-zinc-200 bg-white flex justify-end gap-3">
+                <button onclick="closeModal()" class="px-6 py-3 rounded-xl font-bold text-sm text-zinc-500 hover:bg-zinc-100 transition-colors">
+                    Cancelar
+                </button>
+                <button id="save-btn" form="vehicle-form" type="submit" class="bg-zinc-900 text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-orange-600 transition-colors flex items-center gap-2 shadow-lg">
+                    <span class="material-symbols-outlined text-sm" id="save-icon">save</span>
+                    <span id="save-text">Guardar Vehículo</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Inject logic -->
+    <script src="admin.js"></script>
+
+    <!-- Basic UI Scripts -->
+    <script>
+
+        const yearSelect = document.getElementById('year');
+        const currentYear = new Date().getFullYear() + 1;
+        for(let i = currentYear; i >= 2010; i--) {
+            const opt = document.createElement('option');
+            opt.value = i; opt.textContent = i;
+            yearSelect.appendChild(opt);
+        }
+
+
+        const isActiveCheckbox = document.getElementById('is-active');
+        const statusLabel = document.getElementById('status-label');
+        isActiveCheckbox.addEventListener('change', (e) => {
+            statusLabel.textContent = e.target.checked ? 'Público' : 'Oculto (Vendido)';
+            statusLabel.className = e.target.checked ? 'ml-3 text-sm font-bold text-green-600' : 'ml-3 text-sm font-bold text-red-500';
+        });
+
+
+        const isOfferCheckbox = document.getElementById('is-offer');
+        const offerLabel = document.getElementById('offer-label');
+        isOfferCheckbox.addEventListener('change', (e) => {
+            offerLabel.textContent = e.target.checked ? 'Sí (En Oferta)' : 'No';
+            offerLabel.className = e.target.checked ? 'ml-3 text-sm font-bold text-orange-600' : 'ml-3 text-sm font-bold text-zinc-700';
+        });
+
+
+        const modal = document.getElementById('vehicle-modal');
+        function openModal() {
+            document.getElementById('vehicle-form').reset();
+            document.getElementById('vehicle-id').value = '';
+            document.getElementById('modal-title').textContent = 'Añadir Nuevo Vehículo';
+            isActiveCheckbox.checked = true;
+            statusLabel.textContent = 'Público';
+            statusLabel.className = 'ml-3 text-sm font-bold text-zinc-700';
+            isOfferCheckbox.checked = false;
+            offerLabel.textContent = 'No';
+            offerLabel.className = 'ml-3 text-sm font-bold text-zinc-700';
+            
+            const currentImagesJson = document.getElementById('current-images-json');
+            if (currentImagesJson) currentImagesJson.value = '[]';
+            if (window.renderCurrentImages) window.renderCurrentImages();
+
+            modal.classList.remove('hidden');
+        }
+        function closeModal() {
+            modal.classList.add('hidden');
+        }
+        
+
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); }
+                to { transform: translateX(0); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
