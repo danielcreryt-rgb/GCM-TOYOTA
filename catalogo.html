@@ -106,10 +106,10 @@
 <div class="font-headline z-50">
     <a href="index.html" class="flex flex-col items-start leading-none">
         <div class="flex items-center">
-            <span class="text-primary font-black text-xl mr-1" style="color: rgb(255, 87, 34);">//</span>
-            <span class="text-zinc-900 dark:text-zinc-50 font-black text-xl tracking-tighter">GCM</span>
+            <span class="text-primary font-black text-xl mr-0.5" style="color: rgb(255, 87, 34);">//</span>
+            <span class="text-zinc-900 dark:text-zinc-50 font-black text-xl tracking-tighter italic">GCM</span>
         </div>
-        <span class="text-primary font-bold text-[10px] tracking-[0.1em] mt-1 ml-1" style="color: rgb(255, 87, 34);">AUTOMOTORS</span>
+        <span class="text-primary font-bold text-[10px] tracking-[0.1em] mt-0 ml-1" style="color: rgb(255, 87, 34);">AUTOMOTORS</span>
     </a>
 </div>
 <div class="hidden lg:flex gap-[45px] items-center">
@@ -489,7 +489,7 @@
             grid.innerHTML = currentItems.map(car => `
                 <div class="group cursor-pointer flex flex-col h-full" onclick="window.location.href='detalle.html?id=${car.id}'">
                     <div class="relative aspect-[16/10] overflow-hidden rounded-xl bg-surface-container mb-6 shadow-sm">
-                        <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" src="${car.images && car.images[0] ? car.images[0] : (car.imageMain || '')}">
+                        <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" src="${car.images && car.images[0] ? car.images[0] : (car.imageMain || '')}" onerror="this.onerror=null; this.src='https://via.placeholder.com/800x600?text=GCM+Automotors';">
                         ${car.oldPrice ? `<div class="absolute top-4 left-4 bg-primary/90 text-on-primary backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-md shadow-primary/20">Precio Especial</div>` : ''}
                     </div>
                     <div class="flex justify-between items-start mb-2">

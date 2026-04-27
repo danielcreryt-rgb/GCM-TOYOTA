@@ -38,6 +38,24 @@ const imageFileInput = document.getElementById('image-file');
 const previewGrid = document.getElementById('preview-grid');
 const currentImagesJson = document.getElementById('current-images-json');
 
+// Custom Brand Logic
+const brandSelect = document.getElementById('brand');
+const customBrandContainer = document.getElementById('custom-brand-container');
+const customBrandInput = document.getElementById('custom-brand');
+const predefinedBrands = ['RAM','Ford','Chevrolet','Nissan','Toyota','Honda','Volkswagen','Jeep','Suzuki','MG','Chirey','Mercedes-Benz'];
+
+brandSelect.addEventListener('change', () => {
+    if (brandSelect.value === 'Otra') {
+        customBrandContainer.classList.remove('hidden');
+        customBrandInput.required = true;
+        customBrandInput.focus();
+    } else {
+        customBrandContainer.classList.add('hidden');
+        customBrandInput.required = false;
+        customBrandInput.value = '';
+    }
+});
+
 if(imageFileInput) {
     imageFileInput.addEventListener('change', function() {
         if(!previewGrid) return;
@@ -68,16 +86,23 @@ window.renderCurrentImages = function() {
         const urls = JSON.parse(currentImagesJson.value || '[]');
         if (urls.length > 0) {
             urls.forEach(url => {
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'relative group aspect-video';
+                
                 const img = document.createElement('img');
                 img.src = url;
-                img.className = 'w-full aspect-video object-cover rounded-xl border border-zinc-200 shadow-sm opacity-70';
-                previewGrid.appendChild(img);
+                img.className = 'w-full h-full object-cover rounded-xl border border-zinc-200 shadow-sm opacity-80 group-hover:opacity-100 transition-opacity';
+                img.onerror = () => { img.src = 'https://via.placeholder.com/400x300?text=Error+Imagen'; };
+                
+                imgContainer.appendChild(img);
+                previewGrid.appendChild(imgContainer);
             });
         } else {
-            previewGrid.innerHTML = '<div class="w-full aspect-video rounded-xl bg-zinc-100 border-2 border-dashed border-zinc-300 flex items-center justify-center text-zinc-400 text-xs font-bold col-span-full">Sin Fotos Seleccionadas</div>';
+            previewGrid.innerHTML = '<div class="w-full aspect-video rounded-xl bg-zinc-100 border-2 border-dashed border-zinc-300 flex items-center justify-center text-zinc-400 text-xs font-bold col-span-full">Sin Fotos Guardadas</div>';
         }
     } catch(e) {
-        previewGrid.innerHTML = '<div class="w-full aspect-video rounded-xl bg-zinc-100 border-2 border-dashed border-zinc-300 flex items-center justify-center text-zinc-400 text-xs font-bold col-span-full">Sin Fotos Seleccionadas</div>';
+        console.error("Render Error:", e);
+        previewGrid.innerHTML = '<div class="w-full aspect-video rounded-xl bg-zinc-100 border-2 border-dashed border-zinc-300 flex items-center justify-center text-zinc-400 text-xs font-bold col-span-full">Error al cargar miniaturas</div>';
     }
 }
 
@@ -200,7 +225,7 @@ vehicleForm.addEventListener('submit', async (e) => {
     try {
 
         if (files && files.length > 0) {
-            finalImageUrls = [];
+            const uploadedUrls = [];
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 document.getElementById('loading-text').textContent = `Subiendo foto ${i + 1} de ${files.length}...`;
@@ -215,11 +240,16 @@ vehicleForm.addEventListener('submit', async (e) => {
                 
                 const data = await response.json();
                 if (data.success) {
-                    finalImageUrls.push(data.data.url);
+                    // Usamos 'url' que es el link directo. 'display_url' es otro backup bueno.
+                    uploadedUrls.push(data.data.url);
                 } else {
+                    console.error("ImgBB Error:", data);
                     throw new Error("Error al subir imagen a ImgBB");
                 }
             }
+            // Si el usuario subió fotos nuevas, reemplazamos las anteriores (comportamiento actual)
+            // Si quieres que se sumen, usarías finalImageUrls.push(...uploadedUrls)
+            finalImageUrls = uploadedUrls;
         }
         
         if (finalImageUrls.length === 0) {
@@ -229,7 +259,7 @@ vehicleForm.addEventListener('submit', async (e) => {
         saveText.textContent = "Guardando info...";
 
         const vehicleData = {
-            brand: document.getElementById('brand').value,
+            brand: document.getElementById('brand').value === 'Otra' ? customBrandInput.value.trim() : document.getElementById('brand').value,
             model: document.getElementById('model').value,
             year: document.getElementById('year').value,
             type: document.getElementById('type').value,
@@ -278,7 +308,18 @@ window.editVehicle = (id) => {
     if (!vehicle) return;
 
     document.getElementById('vehicle-id').value = vehicle.id;
-    document.getElementById('brand').value = vehicle.brand || '';
+    // Check if the brand is in the predefined list
+    if (predefinedBrands.includes(vehicle.brand)) {
+        document.getElementById('brand').value = vehicle.brand;
+        customBrandContainer.classList.add('hidden');
+        customBrandInput.required = false;
+        customBrandInput.value = '';
+    } else {
+        document.getElementById('brand').value = 'Otra';
+        customBrandContainer.classList.remove('hidden');
+        customBrandInput.required = true;
+        customBrandInput.value = vehicle.brand || '';
+    }
     document.getElementById('model').value = vehicle.model || '';
     document.getElementById('year').value = vehicle.year || '';
     document.getElementById('type').value = vehicle.type || '';

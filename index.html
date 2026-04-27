@@ -3,7 +3,7 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>GCM AUTOMOTORS | Vehículos de Selección Precisa</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&amp;family=Manrope:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&amp;family=Manrope:wght@400;500;700&amp;family=Montserrat:wght@500&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <style>
   html { visibility: hidden; opacity: 0; transition: opacity 0.4s ease-in-out; }
@@ -100,10 +100,10 @@
 <div class="font-headline z-50">
     <a href="index.html" class="flex flex-col items-start leading-none">
         <div class="flex items-center">
-            <span class="text-primary font-black text-xl mr-1" style="color: rgb(255, 87, 34);">//</span>
-            <span class="text-zinc-900 dark:text-zinc-50 font-black text-xl tracking-tighter">GCM</span>
+            <span class="text-primary font-black text-xl mr-0.5" style="color: rgb(255, 87, 34);">//</span>
+            <span class="text-zinc-900 dark:text-zinc-50 font-black text-xl tracking-tighter italic">GCM</span>
         </div>
-        <span class="text-primary font-bold text-[10px] tracking-[0.1em] mt-1 ml-1" style="color: rgb(255, 87, 34);">AUTOMOTORS</span>
+        <span class="text-primary font-bold text-[10px] tracking-[0.1em] mt-0 ml-1" style="color: rgb(255, 87, 34);">AUTOMOTORS</span>
     </a>
 </div>
 <div class="hidden lg:flex gap-[45px] items-center">
@@ -179,10 +179,10 @@
 
 <h1 class="font-headline tracking-tighter leading-none flex flex-col items-center md:items-start text-center md:text-left">
     <div class="flex items-center">
-        <span class="text-primary font-black text-5xl md:text-7xl mr-2" style="color: rgb(255, 87, 34);">//</span>
-        <span class="text-white font-black text-6xl md:text-8xl">GCM</span>
+        <span class="text-primary font-black text-6xl md:text-8xl -mr-2 inline-block transform scale-y-95 -translate-y-[2px]" style="color: rgb(255, 87, 34);">//</span>
+        <span class="text-white font-black text-6xl md:text-8xl italic inline-block transform translate-y-[5px]">GCM</span>
     </div>
-    <span class="text-primary font-bold text-xl md:text-2xl tracking-[0.2em] mt-2 ml-0 md:ml-1" style="color: rgb(255, 87, 34);">AUTOMOTORS</span>
+    <span class="text-white font-medium text-base md:text-[21px] tracking-[0.32em] mt-2 ml-0 md:ml-1" style="font-family: 'Montserrat', sans-serif;">Automotors Durango</span>
 </h1>
 <p class="text-zinc-400 font-medium text-sm md:text-base max-w-md mt-4 ml-0 md:ml-1 leading-relaxed italic">
     Donde la excelencia automotriz y los mejores seminuevos se encuentran.
@@ -447,7 +447,7 @@
                 featuredGrid.innerHTML = featuredCars.map(car => `
                     <div class="group cursor-pointer" onclick="window.location.href='detalle.html?id=${car.id}'">
                         <div class="relative overflow-hidden rounded-xl bg-surface-container mb-6 aspect-[4/3]">
-                            <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" src="${car.images && car.images[0] ? car.images[0] : (car.imageMain || '')}">
+                            <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" src="${car.images && car.images[0] ? car.images[0] : (car.imageMain || '')}" onerror="this.onerror=null; this.src='https://via.placeholder.com/800x600?text=GCM+Automotors';">
                             ${car.oldPrice ? `<div class="absolute top-4 left-4 bg-primary/90 text-on-primary backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-md shadow-primary/20">PRECIO ESPECIAL</div>` : ''}
                         </div>
                         <div class="flex justify-between items-start mb-2">
