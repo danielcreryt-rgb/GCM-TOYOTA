@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Migrando Datos...</title>
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
+    <script src="inventory.js"></script>
+</head>
+<body style="font-family: sans-serif; text-align: center; padding-top: 50px;">
+    <h2>Migrando tus carros viejos a la nueva base de datos...</h2>
+    <p id="status">Por favor espera...</p>
+
+    <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyAYiRnS9eNTXI-SSZrAy3jgAFTSR0UGhCk",
+          authDomain: "gcm-web1.firebaseapp.com",
+          projectId: "gcm-web1",
+          storageBucket: "gcm-web1.firebasestorage.app",
+          messagingSenderId: "240640122521",
+          appId: "1:240640122521:web:b62bebed82cb6f9518a208"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
+        async function migrateData() {
+            const statusText = document.getElementById('status');
+            try {
+                // Check if they are already migrated to avoid duplicates
+                const snapshot = await db.collection("inventory").get();
+                if (snapshot.size > 2) {
+                    statusText.innerHTML = "¡Parece que ya migraste los datos antes! No lo haré de nuevo para evitar duplicados.<br><br><a href='catalogo.html'>Ir al catálogo</a>";
+                    return;
+                }
+
+                let count = 0;
+                // inventory array comes from inventory.js
+                for (const car of inventory) {
+                    // Adapt the old structure slightly to match the new one
+                    const newCar = {
+                        brand: car.brand,
+                        model: car.model,
+                        year: car.year,
+                        type: car.type || "SUV",
+                        price: car.price,
+                        oldPrice: car.oldPrice || null,
+                        transmission: car.transmission || "Automática",
+                        km: car.km || 0,
+                        engine: car.engine || "",
+                        hp: car.hp || "",
+                        description: car.description || "",
+                        isActive: true,
+                        imageMain: car.imageMain || (car.images && car.images[0]) || "",
+                        images: car.images || [],
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+
+                    await db.collection("inventory").add(newCar);
+                    count++;
+                    statusText.innerText = `Subiendo... ${count} de ${inventory.length}`;
+                }
+
+                statusText.innerHTML = `<h3 style="color: green;">¡Listo! Se subieron ${count} carros a la nube.</h3><br><a href='catalogo.html' style="padding: 10px 20px; background: #ea580c; color: white; text-decoration: none; border-radius: 5px;">Ir a ver el Catálogo</a>`;
+            } catch (error) {
+                console.error("Error migrando:", error);
+                statusText.innerHTML = `<h3 style="color: red;">Hubo un error al migrar. Revisa la consola.</h3>`;
+            }
+        }
+
+        migrateData();
+    </script>
+</body>
+</html>
