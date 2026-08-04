@@ -7,7 +7,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="GCM Automotors | Seminuevos de Selección Precisa en Durango">
 <meta property="og:description" content="Con más de 10 años de experiencia, GCM Automotors es el lugar ideal para encontrar tu próximo vehículo en Durango.">
-<meta property="og:image" content="hero_fachada.jpg">
+<meta property="og:image" content="GCM PORTADA NEW.png">
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&amp;family=Manrope:wght@400;500;700&amp;family=Montserrat:ital,wght@0,400..900;1,400..900&amp;display=swap" rel="stylesheet"/>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
@@ -98,6 +98,13 @@
         text-shadow: 0 0 20px rgba(176, 47, 0, 0.2);
       }
     </style>
+<style>
+@media (max-width: 640px) {
+  .hero-image {
+    object-position: center 110%;
+  }
+}
+</style>
     <!-- Firebase Compat SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
@@ -179,7 +186,7 @@
 <!-- Hero Section with Search -->
 <header class="relative pt-40 pb-20 px-8 min-h-screen flex flex-col justify-center overflow-hidden">
 <div class="absolute inset-0 -z-10 bg-zinc-950">
-<img class="w-full h-full object-cover opacity-70" data-alt="GCM Automotors Hero Image" src="hero_fachada.jpg" style="object-position: center 20%;">
+<img class="hero-image w-full h-full object-cover opacity-70" data-alt="GCM Automotors Hero Image" src="GCM PORTADA NEW.png" style="object-position: center 60%;">
 <!-- Dark Gradient Overlay for text readability -->
 <div class="absolute inset-0 bg-gradient-to-t from-zinc-950/95 via-zinc-950/60 to-zinc-950/20"></div>
 </div>
